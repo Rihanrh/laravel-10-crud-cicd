@@ -1,5 +1,3 @@
-<?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Product;
@@ -15,8 +13,13 @@ class ProductController extends Controller
      */
     public function index() : View
     {
+        $products = Product::all();
+        $products = $products->sortByDesc('created_at');
+        $products = $products->chunk(3);
+        $products = $products->first();
+
         return view('products.index', [
-            'products' => Product::latest()->paginate(3)
+            'products' => $products
         ]);
     }
 
@@ -25,7 +28,10 @@ class ProductController extends Controller
      */
     public function create() : View
     {
-        return view('products.create');
+        $formTitle = "Create New Product";
+        $buttonLabel = "Add Product";
+
+        return view('products.create', compact('formTitle', 'buttonLabel'));
     }
 
     /**
@@ -33,9 +39,20 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request) : RedirectResponse
     {
-        Product::create($request->all());
+        $validatedData = $request->all();
+        $validatedData['created_at'] = now();
+        $validatedData['updated_at'] = now();
+
+        $product = new Product();
+        $product->name = $validatedData['name'];
+        $product->description = $validatedData['description'];
+        $product->price = $validatedData['price'];
+        $product->created_at = $validatedData['created_at'];
+        $product->updated_at = $validatedData['updated_at'];
+        $product->save();
+
         return redirect()->route('products.index')
-                ->withSuccess('New product is added successfully.');
+                ->with('status', 'New product is added successfully.');
     }
 
     /**
@@ -43,38 +60,12 @@ class ProductController extends Controller
      */
     public function show(Product $product) : View
     {
-        return view('products.show', [
-            'product' => $product
-        ]);
-    }
+        $productDetails = [
+            'name' => $product->name,
+            'description' => $product->description,
+            'price' => $product->price,
+            'created_at' => $product->created_at,
+            'updated_at' => $product->updated_at
+        ];
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Product $product) : View
-    {
-        return view('products.edit', [
-            'product' => $product
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateProductRequest $request, Product $product) : RedirectResponse
-    {
-        $product->update($request->all());
-        return redirect()->back()
-                ->withSuccess('Product is updated successfully.');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Product $product) : RedirectResponse
-    {
-        $product->delete();
-        return redirect()->route('products.index')
-                ->withSuccess('Product is deleted successfully.');
-    }
-}
+        return view('products.show', compact('pro
