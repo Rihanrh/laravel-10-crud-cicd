@@ -1,0 +1,39 @@
+name: SonarCloud
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Run PHPUnit tests
+        run: ./vendor/bin/phpunit --coverage-text --log-junit tests/_reports/test-report.xml --coverage-clover tests/_reports/coverage-report.xml
+
+      - name: Run SonarCloud Scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKENS }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sonar-scanner \
+            -Dsonar.projectKey= raliauliya_laravel-10-crud-cicd\
+            -Dsonar.organization= raliauliya\
+            -Dsonar.sources=app \
+            -Dsonar.language=php \
+            -Dsonar.tests=tests \
+            -Dsonar.php.tests.reportPath=tests/_reports/test-report.xml \
+            -Dsonar.php.coverage.reportPaths=tests/_reports/coverage-report.xml \
+            -Dsonar.exclusions=vendor/**,storage/**,public/**,resources/views/**,bootstrap/** \
+            -Dsonar.sourceEncoding=UTF-8
